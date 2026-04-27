@@ -1,10 +1,9 @@
 'use client'
-export const dynamic = 'force-dynamic'
-import { useState, useMemo, useEffect } from 'react'
+import { Suspense, useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import ProductCard from '@/components/ProductCard'
 import { PRODUCTS, CATEGORIES } from '@/lib/products'
-import { Search, SlidersHorizontal, X, ChevronDown, Grid3X3, List } from 'lucide-react'
+import { Search, SlidersHorizontal, X, ChevronDown, Grid3X3, List, Loader2 } from 'lucide-react'
 
 const SORT_OPTIONS = [
   { value: 'popular',   label: 'Most Popular' },
@@ -14,7 +13,7 @@ const SORT_OPTIONS = [
   { value: 'rating',    label: 'Top Rated' },
 ]
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [category, setCategory] = useState(searchParams.get('category') || 'all')
@@ -82,7 +81,6 @@ export default function ProductsPage() {
           </div>
 
           <div className="flex gap-2">
-            {/* Sort */}
             <div className="relative">
               <select
                 value={sort}
@@ -96,7 +94,6 @@ export default function ProductsPage() {
               <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
             </div>
 
-            {/* Filter toggle */}
             <button
               onClick={() => setShowFilters(o => !o)}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
@@ -106,18 +103,11 @@ export default function ProductsPage() {
               <SlidersHorizontal size={16} /> Filters
             </button>
 
-            {/* View toggle */}
             <div className="hidden sm:flex bg-zinc-800 border border-zinc-700 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2.5 transition-colors ${viewMode === 'grid' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white'}`}
-              >
+              <button onClick={() => setViewMode('grid')} className={`p-2.5 transition-colors ${viewMode === 'grid' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white'}`}>
                 <Grid3X3 size={18} />
               </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white'}`}
-              >
+              <button onClick={() => setViewMode('list')} className={`p-2.5 transition-colors ${viewMode === 'list' ? 'bg-orange-500 text-white' : 'text-zinc-400 hover:text-white'}`}>
                 <List size={18} />
               </button>
             </div>
@@ -136,9 +126,7 @@ export default function ProductsPage() {
                       key={c.id}
                       onClick={() => setCategory(c.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        category === c.id
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                        category === c.id ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
                       }`}
                     >
                       {c.icon} {c.label}
@@ -148,15 +136,10 @@ export default function ProductsPage() {
               </div>
               <div className="sm:w-64">
                 <p className="text-sm font-semibold text-white mb-3">
-                  Price Range: Rs.{priceRange[0]} – Rs.{priceRange[1].toLocaleString()}
+                  Price Range: Rs.{priceRange[0]} - Rs.{priceRange[1].toLocaleString()}
                 </p>
-                <input
-                  type="range"
-                  min={0} max={25000} step={500}
-                  value={priceRange[1]}
-                  onChange={e => setPriceRange([0, +e.target.value])}
-                  className="w-full accent-orange-500"
-                />
+                <input type="range" min={0} max={25000} step={500} value={priceRange[1]}
+                  onChange={e => setPriceRange([0, +e.target.value])} className="w-full accent-orange-500" />
               </div>
             </div>
             {hasFilters && (
@@ -170,13 +153,9 @@ export default function ProductsPage() {
         {/* Category pills */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-8">
           {CATEGORIES.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setCategory(c.id)}
+            <button key={c.id} onClick={() => setCategory(c.id)}
               className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                category === c.id
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                  : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white border border-zinc-700'
+                category === c.id ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white border border-zinc-700'
               }`}
             >
               {c.icon} {c.label}
@@ -194,9 +173,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <div className={`grid gap-4 lg:gap-6 ${
-            viewMode === 'grid'
-              ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+            viewMode === 'grid' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
           }`}>
             {filtered.map((p, i) => (
               <div key={p.id} className="animate-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
@@ -207,5 +184,17 @@ export default function ProductsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950 pt-28 flex items-center justify-center">
+        <Loader2 size={32} className="text-orange-400 animate-spin" />
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   )
 }
