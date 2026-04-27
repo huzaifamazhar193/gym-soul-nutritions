@@ -228,7 +228,7 @@ export default function AdminPage() {
               <Shield size={24} className="text-white" />
             </div>
             <h1 className="text-2xl font-black text-white">Admin Panel</h1>
-            <p className="text-zinc-400 text-sm mt-1">Gym Soul Nutritions â€" Owner Access</p>
+            <p className="text-zinc-400 text-sm mt-1">Gym Soul Nutritions " Owner Access</p>
           </div>
           <div className="card p-6">
             <form onSubmit={handleLogin} className="space-y-4">
@@ -249,7 +249,7 @@ export default function AdminPage() {
                   type="password"
                   value={loginForm.pass}
                   onChange={e => setLoginForm(f => ({ ...f, pass: e.target.value }))}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="********"
                   className="input"
                   required
                 />
@@ -369,7 +369,7 @@ export default function AdminPage() {
 
         <div className="p-6">
 
-          {/* â"€â"€â"€â"€â"€â"€â"€ DASHBOARD â"€â"€â"€â"€â"€â"€â"€ */}
+          {/* --------- DASHBOARD --------- */}
           {tab === 'dashboard' && (
             <div className="space-y-6 animate-fade-in">
 
@@ -400,7 +400,7 @@ export default function AdminPage() {
               <div className="card">
                 <div className="flex items-center justify-between p-4 border-b border-zinc-800">
                   <h3 className="text-white font-bold">Recent Orders</h3>
-                  <button onClick={() => setTab('orders')} className="text-orange-400 text-xs hover:text-orange-300 transition-colors">View all â†'</button>
+                  <button onClick={() => setTab('orders')} className="text-orange-400 text-xs hover:text-orange-300 transition-colors">View all ->'</button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -436,7 +436,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* â"€â"€â"€â"€â"€â"€â"€ ORDERS â"€â"€â"€â"€â"€â"€â"€ */}
+          {/* --------- ORDERS --------- */}
           {tab === 'orders' && (
             <div className="space-y-4 animate-fade-in">
               <div className="flex flex-col sm:flex-row gap-3">
@@ -535,7 +535,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* â"€â"€â"€â"€â"€â"€â"€ PRODUCTS â"€â"€â"€â"€â"€â"€â"€ */}
+          {/* --------- PRODUCTS --------- */}
           {tab === 'products' && (
             <div className="space-y-4 animate-fade-in">
               <div className="flex items-center justify-between">
@@ -681,7 +681,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* â"€â"€â"€â"€â"€â"€â"€ STAFF USERS â"€â"€â"€â"€â"€â"€â"€ */}
+          {/* --------- STAFF USERS --------- */}
           {tab === 'staff' && (
             <div className="space-y-6 animate-fade-in">
 
@@ -1019,7 +1019,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* â"€â"€ Delete Confirm Modal â"€â"€ */}
+      {/* --- Delete Confirm Modal --- */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setDeleteConfirm(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
