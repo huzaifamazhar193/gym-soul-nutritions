@@ -7,7 +7,7 @@ import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
 import {
   MapPin, CreditCard, Banknote, Truck, Shield,
-  ChevronRight, Loader2, CheckCircle, Package,
+  ChevronRight, ArrowLeft, Loader2, CheckCircle, Package, Check, Lock,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
@@ -18,7 +18,7 @@ export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart()
   const { user, profile } = useAuth()
   const router = useRouter()
-  const [step, setStep] = useState(1) // 1=address, 2=payment, 3=confirmed
+  const [step, setStep] = useState(1)
   const [payMethod, setPayMethod] = useState('cod')
   const [loading, setLoading] = useState(false)
   const [orderId, setOrderId] = useState(null)
@@ -48,9 +48,19 @@ export default function CheckoutPage() {
     )
   }
 
+  const handleContinueToPayment = () => {
+    if (!addr.fullName.trim()) { toast.error('Full name darain'); return }
+    if (!addr.phone.trim())    { toast.error('Phone number darain'); return }
+    if (!addr.address.trim())  { toast.error('Address darain'); return }
+    if (!addr.city.trim())     { toast.error('City darain'); return }
+    if (!addr.pincode.trim())  { toast.error('Postal code darain'); return }
+    setStep(2)
+  }
+
   const placeOrder = async () => {
     if (!addr.fullName || !addr.phone || !addr.address || !addr.city || !addr.pincode) {
       toast.error('Please fill all address fields')
+      setStep(1)
       return
     }
     setLoading(true)
@@ -60,7 +70,7 @@ export default function CheckoutPage() {
         order_id: oid,
         user_id:  user?.id || null,
         customer_name:  addr.fullName,
-        customer_email: user?.email || 'guest@GymSoul.pk',
+        customer_email: user?.email || 'guest@gymsoul.pk',
         customer_phone: addr.phone,
         address:   addr.address,
         city:      addr.city,
@@ -75,12 +85,9 @@ export default function CheckoutPage() {
         created_at: new Date().toISOString(),
       }
 
-      // Save to Supabase if connected, otherwise just simulate
       try {
         await supabase.from('orders').insert(orderData)
-      } catch (_) {
-        // Works without Supabase too (demo mode)
-      }
+      } catch (_) {}
 
       setOrderId(oid)
       clearCart()
@@ -98,7 +105,7 @@ export default function CheckoutPage() {
           <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-float">
             <CheckCircle size={40} className="text-green-400" />
           </div>
-          <h1 className="text-3xl font-black text-white mb-3">Order Confirmed! ðŸŽ‰</h1>
+          <h1 className="text-3xl font-black text-white mb-3">Order Confirmed!</h1>
           <p className="text-zinc-400 mb-6">
             Your order <span className="text-orange-400 font-bold">{orderId}</span> has been placed successfully!
           </p>
@@ -109,7 +116,7 @@ export default function CheckoutPage() {
               <span className="text-white font-semibold">{orderId}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-zinc-400">Amount Paid</span>
+              <span className="text-zinc-400">Amount</span>
               <span className="text-white font-semibold">Rs.{finalTotal.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
@@ -118,7 +125,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-zinc-400">Delivery</span>
-              <span className="text-green-400 font-semibold">3â€“5 Business Days</span>
+              <span className="text-green-400 font-semibold">3-5 Business Days</span>
             </div>
           </div>
 
@@ -145,8 +152,10 @@ export default function CheckoutPage() {
           {[{n:1,l:'Address'},{n:2,l:'Payment'}].map((s,i) => (
             <div key={s.n} className="flex items-center gap-2">
               <div className={`flex items-center gap-2 ${step >= s.n ? 'text-orange-400' : 'text-zinc-600'}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${step > s.n ? 'bg-green-500 text-white' : step === s.n ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
-                  {step > s.n ? 'âœ“' : s.n}
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+                  step > s.n ? 'bg-green-500 text-white' : step === s.n ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                }`}>
+                  {step > s.n ? <Check size={14} /> : s.n}
                 </div>
                 <span className={`text-sm font-medium ${step >= s.n ? 'text-white' : 'text-zinc-500'}`}>{s.l}</span>
               </div>
@@ -185,13 +194,13 @@ export default function CheckoutPage() {
                     <input value={addr.pincode} onChange={setA('pincode')} className="input" placeholder="5-digit postal code" maxLength={5} />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-zinc-400 mb-1 block">State</label>
+                    <label className="text-xs text-zinc-400 mb-1 block">Province</label>
                     <select value={addr.state} onChange={setA('state')} className="input">
                       {STATES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </div>
-                <button onClick={() => setStep(2)} className="btn-primary mt-6 w-full py-4">
+                <button onClick={handleContinueToPayment} className="btn-primary mt-6 w-full py-4">
                   Continue to Payment <ChevronRight size={18} />
                 </button>
               </div>
@@ -199,8 +208,11 @@ export default function CheckoutPage() {
 
             {step === 2 && (
               <div className="card p-6 animate-fade-in">
-                <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white mb-5 transition-colors">
-                  â† Back to Address
+                <button
+                  onClick={() => setStep(1)}
+                  className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white mb-5 transition-colors"
+                >
+                  <ArrowLeft size={15} /> Back to Address
                 </button>
                 <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
                   <CreditCard size={18} className="text-orange-400" /> Payment Method
@@ -208,8 +220,8 @@ export default function CheckoutPage() {
 
                 <div className="space-y-3 mb-6">
                   {[
-                    { id: 'cod',    icon: Banknote,    title: 'Cash on Delivery',  desc: 'Pay when your order arrives. No advance payment needed.' },
-                    { id: 'online', icon: CreditCard,  title: 'Pay Online',         desc: 'UPI, Card, Net Banking. Instant & secure payment.' },
+                    { id: 'cod',    icon: Banknote,   title: 'Cash on Delivery', desc: 'Pay when your order arrives. No advance payment needed.' },
+                    { id: 'online', icon: CreditCard, title: 'Pay Online',        desc: 'UPI, Card, Net Banking. Instant & secure payment.' },
                   ].map(m => (
                     <button
                       key={m.id}
@@ -235,9 +247,10 @@ export default function CheckoutPage() {
                 </div>
 
                 {payMethod === 'online' && (
-                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4 flex items-start gap-2">
+                    <Lock size={15} className="text-blue-400 mt-0.5 flex-shrink-0" />
                     <p className="text-blue-400 text-sm">
-                      ðŸ”’ You'll be redirected to our secure payment gateway (Razorpay) after placing the order.
+                      You will be redirected to our secure payment gateway after placing the order.
                     </p>
                   </div>
                 )}
@@ -252,7 +265,7 @@ export default function CheckoutPage() {
                   )}
                 </button>
 
-                <div className="flex items-center justify-center gap-4 mt-4">
+                <div className="flex items-center justify-center gap-2 mt-4">
                   <Shield size={14} className="text-zinc-500" />
                   <span className="text-xs text-zinc-500">Secured by 256-bit SSL encryption</span>
                 </div>
@@ -294,9 +307,11 @@ export default function CheckoutPage() {
                   <span>Total</span><span>Rs.{finalTotal.toLocaleString()}</span>
                 </div>
               </div>
-              {step === 1 && addr.fullName && (
+              {addr.city && (
                 <div className="mt-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <p className="text-xs text-zinc-400 flex items-center gap-1.5 mb-1"><Truck size={12} />Delivering to</p>
+                  <p className="text-xs text-zinc-400 flex items-center gap-1.5 mb-1">
+                    <Truck size={12} /> Delivering to
+                  </p>
                   <p className="text-white text-xs font-medium">{addr.city}, {addr.state} {addr.pincode}</p>
                 </div>
               )}
