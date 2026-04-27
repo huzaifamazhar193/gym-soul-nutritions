@@ -61,6 +61,7 @@ export default function AdminPage() {
   const [tab, setTab]                 = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [orders, setOrders]           = useState(DEMO_ORDERS)
+  const [realCustomers, setRealCustomers] = useState([])
   const [orderSearch, setOrderSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [updatingOrder, setUpdatingOrder] = useState(null)
@@ -138,7 +139,32 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authed) return
     supabase.from('orders').select('*').order('created_at', { ascending: false }).then(({ data }) => {
-      if (data?.length) setOrders(data)
+      if (data?.length) {
+        setOrders(data)
+        // Build unique customers list from real orders
+        const customerMap = {}
+        data.forEach(o => {
+          const key = o.customer_email || o.customer_phone
+          if (!key) return
+          if (!customerMap[key]) {
+            customerMap[key] = {
+              name:       o.customer_name,
+              email:      o.customer_email,
+              phone:      o.customer_phone,
+              city:       o.city,
+              orders:     0,
+              totalSpent: 0,
+              lastOrder:  o.created_at,
+            }
+          }
+          customerMap[key].orders += 1
+          if (o.status !== 'cancelled') customerMap[key].totalSpent += (o.total || 0)
+          if (new Date(o.created_at) > new Date(customerMap[key].lastOrder)) {
+            customerMap[key].lastOrder = o.created_at
+          }
+        })
+        setRealCustomers(Object.values(customerMap))
+      }
     })
   }, [authed])
 
@@ -450,7 +476,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3">
                               <div className="max-w-[140px]">
                                 {items.slice(0, 2).map((it, i) => (
-                                  <p key={i} className="text-zinc-300 text-xs truncate">{it.name} Ã—{it.qty}</p>
+                                  <p key={i} className="text-zinc-300 text-xs truncate">{it.name} x{it.qty}</p>
                                 ))}
                                 {items.length > 2 && <p className="text-zinc-600 text-xs">+{items.length-2} more</p>}
                               </div>
@@ -573,64 +599,80 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* â”€â”€â”€â”€â”€â”€â”€ CUSTOMERS â”€â”€â”€â”€â”€â”€â”€ */}
-          {tab === 'customers' && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                {[
-                  { label:'Total Customers', value:'2,50,000+', icon:Users,       color:'text-blue-400' },
-                  { label:'New This Month',  value:'1,247',     icon:TrendingUp,  color:'text-green-400' },
-                  { label:'Repeat Buyers',   value:'68%',       icon:CheckCircle, color:'text-orange-400' },
-                  { label:'Avg Order Value', value:'Rs.8,340',  icon:DollarSign,  color:'text-purple-400' },
-                ].map(s => (
-                  <div key={s.label} className="card p-4">
-                    <s.icon size={20} className={`${s.color} mb-2`} />
-                    <p className="text-xl font-black text-white">{s.value}</p>
-                    <p className="text-zinc-500 text-xs mt-1">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="card overflow-hidden">
-                <div className="p-4 border-b border-zinc-800">
-                  <h3 className="text-white font-bold">Recent Customers</h3>
+          {/* CUSTOMERS */}
+          {tab === 'customers' && (() => {
+            const displayCustomers = realCustomers.length > 0 ? realCustomers : DEMO_ORDERS.map((o, i) => ({
+              name: o.customer_name, email: o.customer_email, phone: o.customer_phone,
+              city: o.city, orders: (i % 4) + 1,
+              totalSpent: o.total * ((i % 3) + 1), lastOrder: o.created_at,
+            }))
+            const totalRevReal   = realCustomers.reduce((s, c) => s + c.totalSpent, 0)
+            const avgOrder       = displayCustomers.length ? Math.round(totalRevReal / Math.max(displayCustomers.reduce((s,c)=>s+c.orders,0), 1)) : 8340
+            return (
+              <div className=”space-y-4 animate-fade-in”>
+                <div className=”grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6”>
+                  {[
+                    { label:'Total Customers', value: realCustomers.length > 0 ? realCustomers.length : '250,000+', icon:Users,       color:'text-blue-400' },
+                    { label:'New This Month',  value: realCustomers.length > 0 ? realCustomers.filter(c => new Date(c.lastOrder) > new Date(Date.now()-30*86400000)).length : '1,247', icon:TrendingUp, color:'text-green-400' },
+                    { label:'Repeat Buyers',   value: realCustomers.length > 0 ? `${Math.round(realCustomers.filter(c=>c.orders>1).length/Math.max(realCustomers.length,1)*100)}%` : '68%', icon:CheckCircle, color:'text-orange-400' },
+                    { label:'Avg Order Value', value: `Rs.${avgOrder > 0 ? avgOrder.toLocaleString() : '8,340'}`, icon:DollarSign, color:'text-purple-400' },
+                  ].map(s => (
+                    <div key={s.label} className=”card p-4”>
+                      <s.icon size={20} className={`${s.color} mb-2`} />
+                      <p className=”text-xl font-black text-white”>{s.value}</p>
+                      <p className=”text-zinc-500 text-xs mt-1”>{s.label}</p>
+                    </div>
+                  ))}
                 </div>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-zinc-500 bg-zinc-900 border-b border-zinc-800">
-                      {['Customer','Contact','City','Orders','Total Spent','Last Order'].map(h => (
-                        <th key={h} className="px-4 py-3 font-semibold">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {DEMO_ORDERS.map((o, i) => (
-                      <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                              {o.customer_name[0]}
-                            </div>
-                            <p className="text-white font-medium text-sm">{o.customer_name}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="text-zinc-300 text-xs">{o.customer_email}</p>
-                          <p className="text-zinc-500 text-xs">{o.customer_phone}</p>
-                        </td>
-                        <td className="px-4 py-3 text-zinc-300 text-xs">{o.city}</td>
-                        <td className="px-4 py-3 text-white font-semibold">{(i % 4) + 1}</td>
-                        <td className="px-4 py-3 text-white font-semibold">Rs.{(o.total * ((i % 3) + 1)).toLocaleString()}</td>
-                        <td className="px-4 py-3 text-zinc-500 text-xs">
-                          {new Date(o.created_at).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+                <div className=”card overflow-hidden”>
+                  <div className=”p-4 border-b border-zinc-800 flex items-center justify-between”>
+                    <h3 className=”text-white font-bold”>
+                      {realCustomers.length > 0 ? `${realCustomers.length} Real Customers` : 'Recent Customers (Demo)'}
+                    </h3>
+                    {realCustomers.length > 0 && (
+                      <span className=”badge bg-green-500/10 text-green-400 border border-green-500/20 text-xs”>Live Data</span>
+                    )}
+                  </div>
+                  <div className=”overflow-x-auto”>
+                    <table className=”w-full text-sm”>
+                      <thead>
+                        <tr className=”text-left text-xs text-zinc-500 bg-zinc-900 border-b border-zinc-800”>
+                          {['Customer','Contact','City','Orders','Total Spent','Last Order'].map(h => (
+                            <th key={h} className=”px-4 py-3 font-semibold”>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {displayCustomers.map((c, i) => (
+                          <tr key={i} className=”border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors”>
+                            <td className=”px-4 py-3”>
+                              <div className=”flex items-center gap-3”>
+                                <div className=”w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0”>
+                                  {c.name?.[0]?.toUpperCase() || '?'}
+                                </div>
+                                <p className=”text-white font-medium text-sm”>{c.name}</p>
+                              </div>
+                            </td>
+                            <td className=”px-4 py-3”>
+                              <p className=”text-zinc-300 text-xs”>{c.email}</p>
+                              <p className=”text-zinc-500 text-xs”>{c.phone}</p>
+                            </td>
+                            <td className=”px-4 py-3 text-zinc-300 text-xs”>{c.city}</td>
+                            <td className=”px-4 py-3 text-white font-semibold”>{c.orders}</td>
+                            <td className=”px-4 py-3 text-white font-semibold”>Rs.{c.totalSpent.toLocaleString()}</td>
+                            <td className=”px-4 py-3 text-zinc-500 text-xs”>
+                              {new Date(c.lastOrder).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* â”€â”€â”€â”€â”€â”€â”€ STAFF USERS â”€â”€â”€â”€â”€â”€â”€ */}
           {tab === 'staff' && (

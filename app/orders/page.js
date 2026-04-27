@@ -56,8 +56,25 @@ export default function OrdersPage() {
     if (!user) return
     const fetchOrders = async () => {
       try {
-        const { data } = await supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-        setOrders(data?.length ? data : DEMO_ORDERS)
+        // Fetch by user_id OR customer_email so guest orders also show up
+        const { data: byId } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        const { data: byEmail } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('customer_email', user.email)
+          .order('created_at', { ascending: false })
+
+        // Merge and deduplicate by order_id
+        const merged = [...(byId || []), ...(byEmail || [])]
+        const unique = merged.filter((o, idx, arr) => arr.findIndex(x => x.order_id === o.order_id) === idx)
+        unique.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+        setOrders(unique.length ? unique : DEMO_ORDERS)
       } catch {
         setOrders(DEMO_ORDERS)
       }
