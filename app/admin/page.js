@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, Users, ShoppingBag, TrendingUp,
   Search, Eye, Edit3, CheckCircle, Clock, DollarSign, ArrowUpRight,
   Loader2, Bell, LogOut, Shield, Star, Menu, X, UserPlus, Trash2,
-  UserCheck, UserCog, EyeOff,
+  UserCheck, UserCog, EyeOff, Settings, KeyRound, Save, AlertCircle,
 } from 'lucide-react'
 
 const AdminCharts = dynamic(() => import('./AdminCharts'), { ssr: false, loading: () => (
@@ -72,15 +72,63 @@ export default function AdminPage() {
   const [userFormErr, setUserFormErr]     = useState('')
   const [userSaving, setUserSaving]       = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [passForm, setPassForm]           = useState({ current: '', newPass: '', confirm: '' })
+  const [passErr, setPassErr]             = useState('')
+  const [passSuccess, setPassSuccess]     = useState(false)
+  const [passSaving, setPassSaving]       = useState(false)
+  const [showCurrentPass, setShowCurrentPass] = useState(false)
+  const [showNewPass, setShowNewPass]         = useState(false)
+  const [showConfirmPass, setShowConfirmPass] = useState(false)
+
+  const getAdminPass = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gymSoul_adminPass') || ADMIN_PASS
+    }
+    return ADMIN_PASS
+  }
 
   const handleLogin = (e) => {
     e.preventDefault()
-    if (loginForm.email === ADMIN_EMAIL && loginForm.pass === ADMIN_PASS) {
+    const currentPass = getAdminPass()
+    if (loginForm.email === ADMIN_EMAIL && loginForm.pass === currentPass) {
       setAuthed(true)
       sessionStorage.setItem('GymSoul_admin', '1')
     } else {
       setLoginErr('Invalid admin credentials')
     }
+  }
+
+  const handleChangePassword = (e) => {
+    e.preventDefault()
+    setPassErr('')
+    setPassSuccess(false)
+    const currentPass = getAdminPass()
+    if (!passForm.current || !passForm.newPass || !passForm.confirm) {
+      setPassErr('Tamam fields fill karo')
+      return
+    }
+    if (passForm.current !== currentPass) {
+      setPassErr('Current password galat hai')
+      return
+    }
+    if (passForm.newPass.length < 6) {
+      setPassErr('Naya password kam az kam 6 characters ka hona chahiye')
+      return
+    }
+    if (passForm.newPass !== passForm.confirm) {
+      setPassErr('Naya password aur confirm password match nahi karte')
+      return
+    }
+    if (passForm.newPass === ADMIN_PASS && passForm.current === ADMIN_PASS) {
+      // Allow setting same as default, but still save
+    }
+    setPassSaving(true)
+    setTimeout(() => {
+      localStorage.setItem('gymSoul_adminPass', passForm.newPass)
+      setPassForm({ current: '', newPass: '', confirm: '' })
+      setPassSuccess(true)
+      setPassSaving(false)
+    }, 600)
   }
 
   useEffect(() => {
@@ -193,11 +241,12 @@ export default function AdminPage() {
   }
 
   const TABS = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'orders',    label: 'Orders',    icon: ShoppingBag,  badge: pendingCnt },
-    { id: 'products',  label: 'Products',  icon: Package },
-    { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'staff',     label: 'Staff Users', icon: UserCog },
+    { id: 'dashboard', label: 'Dashboard',  icon: LayoutDashboard },
+    { id: 'orders',    label: 'Orders',     icon: ShoppingBag, badge: pendingCnt },
+    { id: 'products',  label: 'Products',   icon: Package },
+    { id: 'customers', label: 'Customers',  icon: Users },
+    { id: 'staff',     label: 'Staff Users',icon: UserCog },
+    { id: 'settings',  label: 'Settings',   icon: Settings },
   ]
 
   return (
@@ -677,10 +726,144 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* SETTINGS */}
+          {tab === 'settings' && (
+            <div className=”space-y-6 animate-fade-in max-w-2xl”>
+
+              {/* Change Password */}
+              <div className=”card p-6”>
+                <div className=”flex items-center gap-3 mb-6”>
+                  <div className=”w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20”>
+                    <KeyRound size={18} className=”text-white” />
+                  </div>
+                  <div>
+                    <h3 className=”text-white font-bold text-lg”>Password Change Karo</h3>
+                    <p className=”text-zinc-500 text-sm”>Admin panel ka password update karo</p>
+                  </div>
+                </div>
+
+                {passSuccess && (
+                  <div className=”flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 mb-5”>
+                    <CheckCircle size={18} className=”text-green-400 flex-shrink-0” />
+                    <p className=”text-green-400 text-sm font-medium”>Password successfully change ho gaya!</p>
+                  </div>
+                )}
+
+                {passErr && (
+                  <div className=”flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5”>
+                    <AlertCircle size={18} className=”text-red-400 flex-shrink-0” />
+                    <p className=”text-red-400 text-sm”>{passErr}</p>
+                  </div>
+                )}
+
+                <form onSubmit={handleChangePassword} className=”space-y-4”>
+                  <div>
+                    <label className=”text-xs text-zinc-400 mb-1.5 block font-medium”>Current Password</label>
+                    <div className=”relative”>
+                      <input
+                        type={showCurrentPass ? 'text' : 'password'}
+                        value={passForm.current}
+                        onChange={e => { setPassForm(f => ({ ...f, current: e.target.value })); setPassErr(''); setPassSuccess(false) }}
+                        placeholder=”Purana password dalein”
+                        className=”input pr-10”
+                      />
+                      <button
+                        type=”button”
+                        onClick={() => setShowCurrentPass(p => !p)}
+                        className=”absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors”
+                      >
+                        {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className=”text-xs text-zinc-400 mb-1.5 block font-medium”>New Password</label>
+                    <div className=”relative”>
+                      <input
+                        type={showNewPass ? 'text' : 'password'}
+                        value={passForm.newPass}
+                        onChange={e => { setPassForm(f => ({ ...f, newPass: e.target.value })); setPassErr(''); setPassSuccess(false) }}
+                        placeholder=”Naya password (min. 6 characters)”
+                        className=”input pr-10”
+                      />
+                      <button
+                        type=”button”
+                        onClick={() => setShowNewPass(p => !p)}
+                        className=”absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors”
+                      >
+                        {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className=”text-xs text-zinc-400 mb-1.5 block font-medium”>Confirm New Password</label>
+                    <div className=”relative”>
+                      <input
+                        type={showConfirmPass ? 'text' : 'password'}
+                        value={passForm.confirm}
+                        onChange={e => { setPassForm(f => ({ ...f, confirm: e.target.value })); setPassErr(''); setPassSuccess(false) }}
+                        placeholder=”Naya password dobara likho”
+                        className=”input pr-10”
+                      />
+                      <button
+                        type=”button”
+                        onClick={() => setShowConfirmPass(p => !p)}
+                        className=”absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors”
+                      >
+                        {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type=”submit”
+                    disabled={passSaving}
+                    className=”btn-primary flex items-center gap-2 mt-2”
+                  >
+                    {passSaving ? <Loader2 size={16} className=”animate-spin” /> : <Save size={16} />}
+                    {passSaving ? 'Saving...' : 'Password Save Karo'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Admin info card */}
+              <div className=”card p-5”>
+                <h4 className=”text-white font-semibold mb-4 flex items-center gap-2”>
+                  <Shield size={16} className=”text-orange-400” /> Admin Account Info
+                </h4>
+                <div className=”space-y-3”>
+                  <div className=”flex items-center justify-between py-2 border-b border-zinc-800”>
+                    <span className=”text-zinc-400 text-sm”>Email</span>
+                    <span className=”text-white text-sm font-medium”>admin@gymsoul.pk</span>
+                  </div>
+                  <div className=”flex items-center justify-between py-2 border-b border-zinc-800”>
+                    <span className=”text-zinc-400 text-sm”>Role</span>
+                    <span className=”badge bg-red-400/10 text-red-400 border border-red-400/20 text-xs”>Admin (Owner)</span>
+                  </div>
+                  <div className=”flex items-center justify-between py-2”>
+                    <span className=”text-zinc-400 text-sm”>Password Status</span>
+                    <span className={`badge text-xs border ${
+                      typeof window !== 'undefined' && localStorage.getItem('gymSoul_adminPass')
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                    }`}>
+                      {typeof window !== 'undefined' && localStorage.getItem('gymSoul_adminPass')
+                        ? 'Custom Password Set'
+                        : 'Default Password'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
         </div>
       </main>
 
-      {/* â”€â”€ Add User Modal â”€â”€ */}
+      {/* Add User Modal */}
       {showAddUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setShowAddUser(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
