@@ -228,7 +228,7 @@ export default function AdminPage() {
               <Shield size={24} className="text-white" />
             </div>
             <h1 className="text-2xl font-black text-white">Admin Panel</h1>
-            <p className="text-zinc-400 text-sm mt-1">Gym Soul Nutritions â€” Owner Access</p>
+            <p className="text-zinc-400 text-sm mt-1">Gym Soul Nutritions â€" Owner Access</p>
           </div>
           <div className="card p-6">
             <form onSubmit={handleLogin} className="space-y-4">
@@ -274,6 +274,22 @@ export default function AdminPage() {
     { id: 'staff',     label: 'Staff Users',icon: UserCog },
     { id: 'settings',  label: 'Settings',   icon: Settings },
   ]
+
+  // Customers tab computed values
+  const displayCustomers = realCustomers.length > 0
+    ? realCustomers
+    : DEMO_ORDERS.map((o, i) => ({
+        name: o.customer_name, email: o.customer_email, phone: o.customer_phone,
+        city: o.city, orders: (i % 4) + 1,
+        totalSpent: o.total * ((i % 3) + 1), lastOrder: o.created_at,
+      }))
+  const totalRevReal = realCustomers.reduce((s, c) => s + c.totalSpent, 0)
+  const totalOrdersReal = displayCustomers.reduce((s, c) => s + c.orders, 0)
+  const avgOrder = totalOrdersReal > 0 ? Math.round(totalRevReal / totalOrdersReal) : 8340
+  const newThisMonth = realCustomers.filter(c => new Date(c.lastOrder) > new Date(Date.now() - 30 * 86400000)).length
+  const repeatBuyers = realCustomers.length > 0
+    ? Math.round(realCustomers.filter(c => c.orders > 1).length / realCustomers.length * 100)
+    : 68
 
   return (
     <div className="min-h-screen bg-zinc-950 flex">
@@ -353,7 +369,7 @@ export default function AdminPage() {
 
         <div className="p-6">
 
-          {/* â”€â”€â”€â”€â”€â”€â”€ DASHBOARD â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* â"€â"€â"€â"€â"€â"€â"€ DASHBOARD â"€â"€â"€â"€â"€â"€â"€ */}
           {tab === 'dashboard' && (
             <div className="space-y-6 animate-fade-in">
 
@@ -384,7 +400,7 @@ export default function AdminPage() {
               <div className="card">
                 <div className="flex items-center justify-between p-4 border-b border-zinc-800">
                   <h3 className="text-white font-bold">Recent Orders</h3>
-                  <button onClick={() => setTab('orders')} className="text-orange-400 text-xs hover:text-orange-300 transition-colors">View all â†’</button>
+                  <button onClick={() => setTab('orders')} className="text-orange-400 text-xs hover:text-orange-300 transition-colors">View all â†'</button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -420,7 +436,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* â”€â”€â”€â”€â”€â”€â”€ ORDERS â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* â"€â"€â"€â"€â"€â"€â"€ ORDERS â"€â"€â"€â"€â"€â"€â"€ */}
           {tab === 'orders' && (
             <div className="space-y-4 animate-fade-in">
               <div className="flex flex-col sm:flex-row gap-3">
@@ -519,7 +535,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* â”€â”€â”€â”€â”€â”€â”€ PRODUCTS â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* â"€â"€â"€â"€â"€â"€â"€ PRODUCTS â"€â"€â"€â"€â"€â"€â"€ */}
           {tab === 'products' && (
             <div className="space-y-4 animate-fade-in">
               <div className="flex items-center justify-between">
@@ -600,81 +616,72 @@ export default function AdminPage() {
           )}
 
           {/* CUSTOMERS */}
-          {tab === 'customers' && (() => {
-            const displayCustomers = realCustomers.length > 0 ? realCustomers : DEMO_ORDERS.map((o, i) => ({
-              name: o.customer_name, email: o.customer_email, phone: o.customer_phone,
-              city: o.city, orders: (i % 4) + 1,
-              totalSpent: o.total * ((i % 3) + 1), lastOrder: o.created_at,
-            }))
-            const totalRevReal   = realCustomers.reduce((s, c) => s + c.totalSpent, 0)
-            const avgOrder       = displayCustomers.length ? Math.round(totalRevReal / Math.max(displayCustomers.reduce((s,c)=>s+c.orders,0), 1)) : 8340
-            return (
-              <div className=”space-y-4 animate-fade-in”>
-                <div className=”grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6”>
-                  {[
-                    { label:'Total Customers', value: realCustomers.length > 0 ? realCustomers.length : '250,000+', icon:Users,       color:'text-blue-400' },
-                    { label:'New This Month',  value: realCustomers.length > 0 ? realCustomers.filter(c => new Date(c.lastOrder) > new Date(Date.now()-30*86400000)).length : '1,247', icon:TrendingUp, color:'text-green-400' },
-                    { label:'Repeat Buyers',   value: realCustomers.length > 0 ? `${Math.round(realCustomers.filter(c=>c.orders>1).length/Math.max(realCustomers.length,1)*100)}%` : '68%', icon:CheckCircle, color:'text-orange-400' },
-                    { label:'Avg Order Value', value: `Rs.${avgOrder > 0 ? avgOrder.toLocaleString() : '8,340'}`, icon:DollarSign, color:'text-purple-400' },
-                  ].map(s => (
-                    <div key={s.label} className=”card p-4”>
-                      <s.icon size={20} className={`${s.color} mb-2`} />
-                      <p className=”text-xl font-black text-white”>{s.value}</p>
-                      <p className=”text-zinc-500 text-xs mt-1”>{s.label}</p>
-                    </div>
-                  ))}
-                </div>
+          {tab === 'customers' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label:'Total Customers', value: realCustomers.length > 0 ? realCustomers.length : '250,000+', icon:Users,       color:'text-blue-400' },
+                  { label:'New This Month',  value: realCustomers.length > 0 ? newThisMonth : '1,247',            icon:TrendingUp,  color:'text-green-400' },
+                  { label:'Repeat Buyers',   value: realCustomers.length > 0 ? `${repeatBuyers}%` : '68%',        icon:CheckCircle, color:'text-orange-400' },
+                  { label:'Avg Order Value', value: `Rs.${avgOrder.toLocaleString()}`,                             icon:DollarSign,  color:'text-purple-400' },
+                ].map(s => (
+                  <div key={s.label} className="card p-4">
+                    <s.icon size={20} className={`${s.color} mb-2`} />
+                    <p className="text-xl font-black text-white">{s.value}</p>
+                    <p className="text-zinc-500 text-xs mt-1">{s.label}</p>
+                  </div>
+                ))}
+              </div>
 
-                <div className=”card overflow-hidden”>
-                  <div className=”p-4 border-b border-zinc-800 flex items-center justify-between”>
-                    <h3 className=”text-white font-bold”>
-                      {realCustomers.length > 0 ? `${realCustomers.length} Real Customers` : 'Recent Customers (Demo)'}
-                    </h3>
-                    {realCustomers.length > 0 && (
-                      <span className=”badge bg-green-500/10 text-green-400 border border-green-500/20 text-xs”>Live Data</span>
-                    )}
-                  </div>
-                  <div className=”overflow-x-auto”>
-                    <table className=”w-full text-sm”>
-                      <thead>
-                        <tr className=”text-left text-xs text-zinc-500 bg-zinc-900 border-b border-zinc-800”>
-                          {['Customer','Contact','City','Orders','Total Spent','Last Order'].map(h => (
-                            <th key={h} className=”px-4 py-3 font-semibold”>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {displayCustomers.map((c, i) => (
-                          <tr key={i} className=”border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors”>
-                            <td className=”px-4 py-3”>
-                              <div className=”flex items-center gap-3”>
-                                <div className=”w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0”>
-                                  {c.name?.[0]?.toUpperCase() || '?'}
-                                </div>
-                                <p className=”text-white font-medium text-sm”>{c.name}</p>
-                              </div>
-                            </td>
-                            <td className=”px-4 py-3”>
-                              <p className=”text-zinc-300 text-xs”>{c.email}</p>
-                              <p className=”text-zinc-500 text-xs”>{c.phone}</p>
-                            </td>
-                            <td className=”px-4 py-3 text-zinc-300 text-xs”>{c.city}</td>
-                            <td className=”px-4 py-3 text-white font-semibold”>{c.orders}</td>
-                            <td className=”px-4 py-3 text-white font-semibold”>Rs.{c.totalSpent.toLocaleString()}</td>
-                            <td className=”px-4 py-3 text-zinc-500 text-xs”>
-                              {new Date(c.lastOrder).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}
-                            </td>
-                          </tr>
+              <div className="card overflow-hidden">
+                <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                  <h3 className="text-white font-bold">
+                    {realCustomers.length > 0 ? `${realCustomers.length} Real Customers` : 'Recent Customers (Demo)'}
+                  </h3>
+                  {realCustomers.length > 0 && (
+                    <span className="badge bg-green-500/10 text-green-400 border border-green-500/20 text-xs">Live Data</span>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-zinc-500 bg-zinc-900 border-b border-zinc-800">
+                        {['Customer','Contact','City','Orders','Total Spent','Last Order'].map(h => (
+                          <th key={h} className="px-4 py-3 font-semibold">{h}</th>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {displayCustomers.map((c, i) => (
+                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                {c.name?.[0]?.toUpperCase() || '?'}
+                              </div>
+                              <p className="text-white font-medium text-sm">{c.name}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="text-zinc-300 text-xs">{c.email}</p>
+                            <p className="text-zinc-500 text-xs">{c.phone}</p>
+                          </td>
+                          <td className="px-4 py-3 text-zinc-300 text-xs">{c.city}</td>
+                          <td className="px-4 py-3 text-white font-semibold">{c.orders}</td>
+                          <td className="px-4 py-3 text-white font-semibold">Rs.{c.totalSpent.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-zinc-500 text-xs">
+                            {new Date(c.lastOrder).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )
-          })()}
+            </div>
+          )}
 
-          {/* â”€â”€â”€â”€â”€â”€â”€ STAFF USERS â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* â"€â"€â"€â"€â"€â"€â"€ STAFF USERS â"€â"€â"€â"€â"€â"€â"€ */}
           {tab === 'staff' && (
             <div className="space-y-6 animate-fade-in">
 
@@ -770,49 +777,49 @@ export default function AdminPage() {
 
           {/* SETTINGS */}
           {tab === 'settings' && (
-            <div className=”space-y-6 animate-fade-in max-w-2xl”>
+            <div className="space-y-6 animate-fade-in max-w-2xl">
 
               {/* Change Password */}
-              <div className=”card p-6”>
-                <div className=”flex items-center gap-3 mb-6”>
-                  <div className=”w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20”>
-                    <KeyRound size={18} className=”text-white” />
+              <div className="card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+                    <KeyRound size={18} className="text-white" />
                   </div>
                   <div>
-                    <h3 className=”text-white font-bold text-lg”>Password Change Karo</h3>
-                    <p className=”text-zinc-500 text-sm”>Admin panel ka password update karo</p>
+                    <h3 className="text-white font-bold text-lg">Password Change Karo</h3>
+                    <p className="text-zinc-500 text-sm">Admin panel ka password update karo</p>
                   </div>
                 </div>
 
                 {passSuccess && (
-                  <div className=”flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 mb-5”>
-                    <CheckCircle size={18} className=”text-green-400 flex-shrink-0” />
-                    <p className=”text-green-400 text-sm font-medium”>Password successfully change ho gaya!</p>
+                  <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 mb-5">
+                    <CheckCircle size={18} className="text-green-400 flex-shrink-0" />
+                    <p className="text-green-400 text-sm font-medium">Password successfully change ho gaya!</p>
                   </div>
                 )}
 
                 {passErr && (
-                  <div className=”flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5”>
-                    <AlertCircle size={18} className=”text-red-400 flex-shrink-0” />
-                    <p className=”text-red-400 text-sm”>{passErr}</p>
+                  <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-5">
+                    <AlertCircle size={18} className="text-red-400 flex-shrink-0" />
+                    <p className="text-red-400 text-sm">{passErr}</p>
                   </div>
                 )}
 
-                <form onSubmit={handleChangePassword} className=”space-y-4”>
+                <form onSubmit={handleChangePassword} className="space-y-4">
                   <div>
-                    <label className=”text-xs text-zinc-400 mb-1.5 block font-medium”>Current Password</label>
-                    <div className=”relative”>
+                    <label className="text-xs text-zinc-400 mb-1.5 block font-medium">Current Password</label>
+                    <div className="relative">
                       <input
                         type={showCurrentPass ? 'text' : 'password'}
                         value={passForm.current}
                         onChange={e => { setPassForm(f => ({ ...f, current: e.target.value })); setPassErr(''); setPassSuccess(false) }}
-                        placeholder=”Purana password dalein”
-                        className=”input pr-10”
+                        placeholder="Purana password dalein"
+                        className="input pr-10"
                       />
                       <button
-                        type=”button”
+                        type="button"
                         onClick={() => setShowCurrentPass(p => !p)}
-                        className=”absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors”
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
                       >
                         {showCurrentPass ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -820,19 +827,19 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className=”text-xs text-zinc-400 mb-1.5 block font-medium”>New Password</label>
-                    <div className=”relative”>
+                    <label className="text-xs text-zinc-400 mb-1.5 block font-medium">New Password</label>
+                    <div className="relative">
                       <input
                         type={showNewPass ? 'text' : 'password'}
                         value={passForm.newPass}
                         onChange={e => { setPassForm(f => ({ ...f, newPass: e.target.value })); setPassErr(''); setPassSuccess(false) }}
-                        placeholder=”Naya password (min. 6 characters)”
-                        className=”input pr-10”
+                        placeholder="Naya password (min. 6 characters)"
+                        className="input pr-10"
                       />
                       <button
-                        type=”button”
+                        type="button"
                         onClick={() => setShowNewPass(p => !p)}
-                        className=”absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors”
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
                       >
                         {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -840,19 +847,19 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className=”text-xs text-zinc-400 mb-1.5 block font-medium”>Confirm New Password</label>
-                    <div className=”relative”>
+                    <label className="text-xs text-zinc-400 mb-1.5 block font-medium">Confirm New Password</label>
+                    <div className="relative">
                       <input
                         type={showConfirmPass ? 'text' : 'password'}
                         value={passForm.confirm}
                         onChange={e => { setPassForm(f => ({ ...f, confirm: e.target.value })); setPassErr(''); setPassSuccess(false) }}
-                        placeholder=”Naya password dobara likho”
-                        className=”input pr-10”
+                        placeholder="Naya password dobara likho"
+                        className="input pr-10"
                       />
                       <button
-                        type=”button”
+                        type="button"
                         onClick={() => setShowConfirmPass(p => !p)}
-                        className=”absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors”
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
                       >
                         {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -860,32 +867,32 @@ export default function AdminPage() {
                   </div>
 
                   <button
-                    type=”submit”
+                    type="submit"
                     disabled={passSaving}
-                    className=”btn-primary flex items-center gap-2 mt-2”
+                    className="btn-primary flex items-center gap-2 mt-2"
                   >
-                    {passSaving ? <Loader2 size={16} className=”animate-spin” /> : <Save size={16} />}
+                    {passSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     {passSaving ? 'Saving...' : 'Password Save Karo'}
                   </button>
                 </form>
               </div>
 
               {/* Admin info card */}
-              <div className=”card p-5”>
-                <h4 className=”text-white font-semibold mb-4 flex items-center gap-2”>
-                  <Shield size={16} className=”text-orange-400” /> Admin Account Info
+              <div className="card p-5">
+                <h4 className="text-white font-semibold mb-4 flex items-center gap-2">
+                  <Shield size={16} className="text-orange-400" /> Admin Account Info
                 </h4>
-                <div className=”space-y-3”>
-                  <div className=”flex items-center justify-between py-2 border-b border-zinc-800”>
-                    <span className=”text-zinc-400 text-sm”>Email</span>
-                    <span className=”text-white text-sm font-medium”>admin@gymsoul.pk</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2 border-b border-zinc-800">
+                    <span className="text-zinc-400 text-sm">Email</span>
+                    <span className="text-white text-sm font-medium">admin@gymsoul.pk</span>
                   </div>
-                  <div className=”flex items-center justify-between py-2 border-b border-zinc-800”>
-                    <span className=”text-zinc-400 text-sm”>Role</span>
-                    <span className=”badge bg-red-400/10 text-red-400 border border-red-400/20 text-xs”>Admin (Owner)</span>
+                  <div className="flex items-center justify-between py-2 border-b border-zinc-800">
+                    <span className="text-zinc-400 text-sm">Role</span>
+                    <span className="badge bg-red-400/10 text-red-400 border border-red-400/20 text-xs">Admin (Owner)</span>
                   </div>
-                  <div className=”flex items-center justify-between py-2”>
-                    <span className=”text-zinc-400 text-sm”>Password Status</span>
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-zinc-400 text-sm">Password Status</span>
                     <span className={`badge text-xs border ${
                       typeof window !== 'undefined' && localStorage.getItem('gymSoul_adminPass')
                         ? 'bg-green-500/10 text-green-400 border-green-500/20'
@@ -1012,7 +1019,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* â”€â”€ Delete Confirm Modal â”€â”€ */}
+      {/* â"€â"€ Delete Confirm Modal â"€â"€ */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setDeleteConfirm(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
