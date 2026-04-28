@@ -54,6 +54,143 @@ const STATUS_COLOR = {
   cancelled:  'text-red-400 bg-red-400/10 border-red-400/20',
 }
 
+function OrderDetailModal({ order: o, onClose, onStatusChange, statusOptions, statusColor }) {
+  if (!o) return null
+  const items = JSON.parse(o.items || '[]')
+  const statuses = ['confirmed','processing','shipped','delivered']
+  const currentIdx = statuses.indexOf(o.status)
+  const sc = statusColor[o.status] || statusColor.confirmed
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-zinc-800 sticky top-0 bg-zinc-900 z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-500/15 rounded-xl flex items-center justify-center">
+              <Package size={18} className="text-orange-400" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm font-mono">{o.order_id}</p>
+              <p className="text-zinc-500 text-xs">{new Date(o.created_at).toLocaleString('en-PK', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`badge border text-xs font-semibold ${sc}`}>{o.status}</span>
+            <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4">
+
+          {/* Customer + Address */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="bg-zinc-800/50 rounded-xl p-4">
+              <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-3">Customer</p>
+              <p className="text-white font-bold text-base">{o.customer_name}</p>
+              <p className="text-zinc-400 text-sm mt-1">{o.customer_phone}</p>
+              <p className="text-zinc-400 text-sm">{o.customer_email}</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-xl p-4">
+              <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-3">Delivery Address</p>
+              {o.address && <p className="text-white text-sm leading-relaxed">{o.address}</p>}
+              <p className="text-orange-400 text-sm font-semibold mt-1">
+                {[o.city, o.state, o.pincode].filter(Boolean).join(', ')}
+              </p>
+            </div>
+          </div>
+
+          {/* Items */}
+          <div className="bg-zinc-800/50 rounded-xl p-4">
+            <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-3">Ordered Items</p>
+            <div className="space-y-2">
+              {items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-700/50 last:border-0">
+                  <div>
+                    <p className="text-white font-medium text-sm">{item.name}</p>
+                    <p className="text-zinc-500 text-xs mt-0.5">
+                      Qty: {item.qty}
+                      {item.flavor && item.flavor !== 'N/A' ? ` | ${item.flavor}` : ''}
+                      {item.size ? ` | ${item.size}` : ''}
+                    </p>
+                  </div>
+                  <p className="text-white font-bold text-sm">Rs.{(item.price * item.qty).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 pt-3 border-t border-zinc-700 space-y-1.5">
+              <div className="flex justify-between text-sm text-zinc-400">
+                <span>Subtotal</span>
+                <span className="text-white">Rs.{(o.subtotal || o.total)?.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm text-zinc-400">
+                <span>Shipping</span>
+                <span className={o.shipping === 0 ? 'text-green-400 font-medium' : 'text-white'}>
+                  {o.shipping === 0 ? 'FREE' : o.shipping ? `Rs.${o.shipping}` : 'FREE'}
+                </span>
+              </div>
+              <div className="flex justify-between text-base font-bold pt-1 border-t border-zinc-700">
+                <span className="text-white">Total</span>
+                <span className="text-orange-400">Rs.{o.total?.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment + Update Status */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="bg-zinc-800/50 rounded-xl p-4">
+              <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-2">Payment Method</p>
+              <p className="text-white font-semibold">
+                {o.payment_method === 'cod' ? 'Cash on Delivery' : 'Online Payment'}
+              </p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-xl p-4">
+              <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-2">Update Status</p>
+              <select
+                value={o.status}
+                onChange={e => onStatusChange(o.order_id, e.target.value)}
+                className="w-full text-sm bg-zinc-800 border border-zinc-600 text-white rounded-lg px-3 py-2 appearance-none cursor-pointer hover:border-orange-500 focus:outline-none focus:border-orange-500"
+              >
+                {statusOptions.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Progress Timeline */}
+          {o.status !== 'cancelled' && (
+            <div className="bg-zinc-800/50 rounded-xl p-4">
+              <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-4">Order Progress</p>
+              <div className="flex items-center">
+                {statuses.map((s, si) => {
+                  const done = si <= currentIdx
+                  const active = si === currentIdx
+                  return (
+                    <div key={s} className="flex items-center flex-1">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${done ? 'bg-orange-500 border-orange-500' : 'bg-zinc-800 border-zinc-600'}`}>
+                          {done ? <CheckCircle size={14} className="text-white" /> : <span className="text-zinc-500 text-xs">{si + 1}</span>}
+                        </div>
+                        <p className={`text-[10px] mt-1.5 capitalize font-medium whitespace-nowrap ${active ? 'text-orange-400' : done ? 'text-zinc-300' : 'text-zinc-600'}`}>{s}</p>
+                      </div>
+                      {si < statuses.length - 1 && (
+                        <div className={`flex-1 h-0.5 mx-1 mb-4 ${si < currentIdx ? 'bg-orange-500' : 'bg-zinc-700'}`} />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [authed, setAuthed]           = useState(false)
   const [loginForm, setLoginForm]     = useState({ email: '', pass: '' })
@@ -73,6 +210,7 @@ export default function AdminPage() {
   const [userFormErr, setUserFormErr]     = useState('')
   const [userSaving, setUserSaving]       = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [selectedOrder, setSelectedOrder] = useState(null)
   const [passForm, setPassForm]           = useState({ current: '', newPass: '', confirm: '' })
   const [passErr, setPassErr]             = useState('')
   const [passSuccess, setPassSuccess]     = useState(false)
@@ -471,7 +609,7 @@ export default function AdminPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-xs text-zinc-500 bg-zinc-900 border-b border-zinc-800">
-                        {['Order ID','Customer & Address','Items','Amount','Status','Payment','Update Status','Date'].map(h => (
+                        {['Order ID','Customer & Address','Items','Amount','Status','Payment','Update Status','Date',''].map(h => (
                           <th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
@@ -480,7 +618,7 @@ export default function AdminPage() {
                       {filteredOrders.map(o => {
                         const items = JSON.parse(o.items || '[]')
                         return (
-                          <tr key={o.order_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                          <tr key={o.order_id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors cursor-pointer" onClick={() => setSelectedOrder(o)}>
                             <td className="px-4 py-3">
                               <p className="text-orange-400 font-mono text-xs">{o.order_id}</p>
                             </td>
@@ -507,7 +645,7 @@ export default function AdminPage() {
                               <span className={`badge border text-xs font-medium ${STATUS_COLOR[o.status] || STATUS_COLOR.confirmed}`}>{o.status}</span>
                             </td>
                             <td className="px-4 py-3 text-zinc-400 capitalize text-xs">{o.payment_method}</td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                               <div className="relative">
                                 <select
                                   value={o.status}
@@ -524,6 +662,14 @@ export default function AdminPage() {
                             </td>
                             <td className="px-4 py-3 text-zinc-500 text-xs whitespace-nowrap">
                               {new Date(o.created_at).toLocaleDateString('en-PK',{day:'numeric',month:'short',year:'2-digit'})}
+                            </td>
+                            <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                              <button
+                                onClick={() => setSelectedOrder(o)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-lg text-xs font-medium hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all"
+                              >
+                                <Eye size={12} /> View
+                              </button>
                             </td>
                           </tr>
                         )
@@ -914,6 +1060,19 @@ export default function AdminPage() {
 
         </div>
       </main>
+
+      {/* Order Detail Modal */}
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onStatusChange={(oid, status) => {
+            updateOrderStatus(oid, status)
+            setSelectedOrder(prev => ({ ...prev, status }))
+          }}
+          statusOptions={STATUS_OPTIONS}
+          statusColor={STATUS_COLOR}
+        />
 
       {/* Add User Modal */}
       {showAddUser && (
