@@ -54,6 +54,197 @@ const STATUS_COLOR = {
   cancelled:  'text-red-400 bg-red-400/10 border-red-400/20',
 }
 
+function ProductViewModal({ product: p, onClose, onEdit }) {
+  if (!p) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+          <h3 className="text-white font-bold">Product Detail</h3>
+          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex gap-4">
+            <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-800 flex-shrink-0">
+              <Image src={p.image} alt={p.name} fill className="object-cover" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-white font-bold text-base leading-snug">{p.name}</p>
+                  <p className="text-orange-400 text-sm">{p.brand}</p>
+                </div>
+                {p.badge && <span className="badge bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs flex-shrink-0">{p.badge}</span>}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                <span className="text-white text-xs font-semibold">{p.rating}</span>
+                <span className="text-zinc-500 text-xs">({p.reviews.toLocaleString()} reviews)</span>
+              </div>
+            </div>
+          </div>
+          <p className="text-zinc-400 text-sm leading-relaxed">{p.description}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-zinc-800/50 rounded-xl p-3">
+              <p className="text-zinc-500 text-xs mb-1">Price</p>
+              <p className="text-white font-bold">Rs.{p.price.toLocaleString()}</p>
+              <p className="text-zinc-600 text-xs line-through">Rs.{p.originalPrice?.toLocaleString()}</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-xl p-3">
+              <p className="text-zinc-500 text-xs mb-1">Stock</p>
+              <p className={`font-bold ${p.stock > 50 ? 'text-green-400' : p.stock > 20 ? 'text-yellow-400' : 'text-red-400'}`}>{p.stock} units</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-xl p-3">
+              <p className="text-zinc-500 text-xs mb-1">Flavors</p>
+              <p className="text-white text-xs">{p.flavors?.join(', ')}</p>
+            </div>
+            <div className="bg-zinc-800/50 rounded-xl p-3">
+              <p className="text-zinc-500 text-xs mb-1">Sizes</p>
+              <p className="text-white text-xs">{p.sizes?.join(', ')}</p>
+            </div>
+          </div>
+          {p.features?.length > 0 && (
+            <div className="bg-zinc-800/50 rounded-xl p-3">
+              <p className="text-zinc-500 text-xs mb-2">Key Features</p>
+              <div className="flex flex-wrap gap-2">
+                {p.features.map((f, i) => (
+                  <span key={i} className="badge bg-zinc-700 text-zinc-300 text-xs">{f}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <button onClick={() => { onClose(); onEdit(p) }} className="btn-primary w-full py-3">
+            <Edit3 size={15} /> Edit Product
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProductEditModal({ product: p, onClose, onSave }) {
+  const [form, setForm] = useState(p ? { price: p.price, stock: p.stock, discount: p.discount, badge: p.badge || '' } : {})
+  const [saving, setSaving] = useState(false)
+  if (!p) return null
+  const setF = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
+  const handleSave = () => {
+    setSaving(true)
+    setTimeout(() => {
+      onSave({ ...p, price: Number(form.price), stock: Number(form.stock), discount: Number(form.discount), badge: form.badge || null })
+      setSaving(false)
+      onClose()
+    }, 500)
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative w-full max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl animate-fade-in" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+          <div>
+            <h3 className="text-white font-bold">Edit Product</h3>
+            <p className="text-zinc-500 text-xs mt-0.5">{p.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-zinc-400 mb-1.5 block font-medium">Price (Rs.)</label>
+              <input type="number" value={form.price} onChange={setF('price')} className="input" />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400 mb-1.5 block font-medium">Stock (units)</label>
+              <input type="number" value={form.stock} onChange={setF('stock')} className="input" />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400 mb-1.5 block font-medium">Discount (%)</label>
+              <input type="number" value={form.discount} onChange={setF('discount')} className="input" min="0" max="99" />
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400 mb-1.5 block font-medium">Badge</label>
+              <input type="text" value={form.badge} onChange={setF('badge')} placeholder="e.g. Best Seller" className="input" />
+            </div>
+          </div>
+          <div className="bg-zinc-800/50 rounded-xl p-3 text-xs text-zinc-500">
+            Note: Changes apply to this session only. For permanent changes, update the products database.
+          </div>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="btn-secondary flex-1 py-3">Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 py-3">
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StatPopupModal({ label, orders, statusColor, onClose, onOrderClick }) {
+  const today = new Date().toDateString()
+  const filtered = label === 'Total Revenue'
+    ? orders.filter(o => o.status !== 'cancelled')
+    : label === "Today's Orders"
+    ? orders.filter(o => new Date(o.created_at).toDateString() === today)
+    : label === 'Delivered'
+    ? orders.filter(o => o.status === 'delivered')
+    : orders.filter(o => ['confirmed','processing','shipped'].includes(o.status))
+  const total = filtered.reduce((s, o) => s + (o.total || 0), 0)
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl animate-fade-in max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-zinc-800 sticky top-0 bg-zinc-900 z-10">
+          <div>
+            <h3 className="text-white font-bold text-lg">{label}</h3>
+            <p className="text-zinc-500 text-sm">
+              {filtered.length} orders
+              {label === 'Total Revenue' && ` | Rs.${total.toLocaleString()}`}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-zinc-500">No orders in this category</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-zinc-800">
+            {filtered.map(o => {
+              const items = JSON.parse(o.items || '[]')
+              const sc = statusColor[o.status] || statusColor.confirmed
+              return (
+                <div key={o.order_id} className="p-4 hover:bg-zinc-800/30 cursor-pointer transition-colors" onClick={() => onOrderClick(o)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-orange-400 font-mono text-xs">{o.order_id}</p>
+                        <span className={`badge border text-[10px] font-medium ${sc}`}>{o.status}</span>
+                      </div>
+                      <p className="text-white font-semibold text-sm mt-1">{o.customer_name}</p>
+                      <p className="text-zinc-500 text-xs">{o.customer_phone} | {o.city}</p>
+                      <p className="text-zinc-400 text-xs mt-1 truncate">{items.map(i => `${i.name} x${i.qty}`).join(', ')}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-white font-bold">Rs.{o.total?.toLocaleString()}</p>
+                      <p className="text-zinc-500 text-xs mt-1">{new Date(o.created_at).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}</p>
+                      <p className="text-orange-400 text-[10px] mt-1">Click to view</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function OrderDetailModal({ order: o, onClose, onStatusChange, statusOptions, statusColor }) {
   if (!o) return null
   const items = JSON.parse(o.items || '[]')
@@ -211,6 +402,10 @@ export default function AdminPage() {
   const [userSaving, setUserSaving]       = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [viewProduct, setViewProduct]     = useState(null)
+  const [editProduct, setEditProduct]     = useState(null)
+  const [localProducts, setLocalProducts] = useState(PRODUCTS)
+  const [statPopup, setStatPopup]         = useState(null)
   const [passForm, setPassForm]           = useState({ current: '', newPass: '', confirm: '' })
   const [passErr, setPassErr]             = useState('')
   const [passSuccess, setPassSuccess]     = useState(false)
@@ -512,7 +707,7 @@ export default function AdminPage() {
               {/* Stat cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {STATS.map(s => (
-                  <div key={s.label} className={`card p-5 shadow-lg ${s.glow}`}>
+                  <div key={s.label} onClick={() => setStatPopup(s.label)} className={`card p-5 shadow-lg ${s.glow} cursor-pointer hover:scale-[1.02] transition-transform`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-lg`}>
                         <s.icon size={18} className="text-white" />
@@ -525,6 +720,7 @@ export default function AdminPage() {
                     </div>
                     <p className="text-2xl font-black text-white">{s.value}</p>
                     <p className="text-zinc-500 text-xs mt-1">{s.label}</p>
+                    <p className="text-zinc-600 text-[10px] mt-1">Click for details</p>
                   </div>
                 ))}
               </div>
@@ -713,10 +909,10 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {PRODUCTS
+                      {localProducts
                         .filter(p => !productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()) || p.brand.toLowerCase().includes(productSearch.toLowerCase()))
                         .map(p => (
-                          <tr key={p.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
+                          <tr key={p.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors cursor-pointer" onClick={() => setViewProduct(p)}>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
                                 <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
@@ -747,12 +943,12 @@ export default function AdminPage() {
                                 {p.stock} units
                               </span>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                               <div className="flex items-center gap-2">
-                                <button className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors">
+                                <button onClick={() => setViewProduct(p)} className="p-1.5 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors" title="View">
                                   <Eye size={14} />
                                 </button>
-                                <button className="p-1.5 text-zinc-400 hover:text-orange-400 hover:bg-orange-400/10 rounded-lg transition-colors">
+                                <button onClick={() => setEditProduct(p)} className="p-1.5 text-zinc-400 hover:text-orange-400 hover:bg-orange-400/10 rounded-lg transition-colors" title="Edit">
                                   <Edit3 size={14} />
                                 </button>
                               </div>
@@ -1180,6 +1376,35 @@ export default function AdminPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Product View Modal */}
+      {viewProduct && (
+        <ProductViewModal
+          product={viewProduct}
+          onClose={() => setViewProduct(null)}
+          onEdit={p => setEditProduct(p)}
+        />
+      )}
+
+      {/* Product Edit Modal */}
+      {editProduct && (
+        <ProductEditModal
+          product={editProduct}
+          onClose={() => setEditProduct(null)}
+          onSave={updated => setLocalProducts(prev => prev.map(p => p.id === updated.id ? updated : p))}
+        />
+      )}
+
+      {/* Stat Popup Modal */}
+      {statPopup && (
+        <StatPopupModal
+          label={statPopup}
+          orders={orders}
+          statusColor={STATUS_COLOR}
+          onClose={() => setStatPopup(null)}
+          onOrderClick={o => { setStatPopup(null); setSelectedOrder(o) }}
+        />
       )}
 
       {/* --- Delete Confirm Modal --- */}
