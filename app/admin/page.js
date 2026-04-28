@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Package, Users, ShoppingBag, TrendingUp,
   Search, Eye, Edit3, CheckCircle, Clock, DollarSign, ArrowUpRight,
   Loader2, Bell, LogOut, Shield, Star, Menu, X, UserPlus, Trash2,
-  UserCheck, UserCog, EyeOff, Settings, KeyRound, Save, AlertCircle,
+  UserCheck, UserCog, EyeOff, Settings, KeyRound, Save, AlertCircle, ChevronRight,
 } from 'lucide-react'
 
 const AdminCharts = dynamic(() => import('./AdminCharts'), { ssr: false, loading: () => (
