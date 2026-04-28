@@ -80,13 +80,9 @@ export default function AdminPage() {
   const [showCurrentPass, setShowCurrentPass] = useState(false)
   const [showNewPass, setShowNewPass]         = useState(false)
   const [showConfirmPass, setShowConfirmPass] = useState(false)
+  const [hasCustomPass, setHasCustomPass]     = useState(false)
 
-  const getAdminPass = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('gymSoul_adminPass') || ADMIN_PASS
-    }
-    return ADMIN_PASS
-  }
+  const getAdminPass = () => localStorage.getItem('gymSoul_adminPass') || ADMIN_PASS
 
   const handleLogin = (e) => {
     e.preventDefault()
@@ -126,6 +122,7 @@ export default function AdminPage() {
     setPassSaving(true)
     setTimeout(() => {
       localStorage.setItem('gymSoul_adminPass', passForm.newPass)
+      setHasCustomPass(true)
       setPassForm({ current: '', newPass: '', confirm: '' })
       setPassSuccess(true)
       setPassSaving(false)
@@ -134,6 +131,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (sessionStorage.getItem('GymSoul_admin')) setAuthed(true)
+    setHasCustomPass(!!localStorage.getItem('gymSoul_adminPass'))
   }, [])
 
   useEffect(() => {
@@ -901,13 +899,11 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between py-2">
                     <span className="text-zinc-400 text-sm">Password Status</span>
                     <span className={`badge text-xs border ${
-                      typeof window !== 'undefined' && localStorage.getItem('gymSoul_adminPass')
+                      hasCustomPass
                         ? 'bg-green-500/10 text-green-400 border-green-500/20'
                         : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
-                      {typeof window !== 'undefined' && localStorage.getItem('gymSoul_adminPass')
-                        ? 'Custom Password Set'
-                        : 'Default Password'}
+                      {hasCustomPass ? 'Custom Password Set' : 'Default Password'}
                     </span>
                   </div>
                 </div>
