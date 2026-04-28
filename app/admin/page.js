@@ -417,7 +417,9 @@ export default function AdminPage() {
                           <td className="px-4 py-3 text-orange-400 font-mono text-xs">{o.order_id}</td>
                           <td className="px-4 py-3">
                             <p className="text-white font-medium">{o.customer_name}</p>
-                            <p className="text-zinc-500 text-xs">{o.city}</p>
+                            <p className="text-zinc-400 text-xs">{o.customer_phone}</p>
+                            {o.address && <p className="text-zinc-400 text-xs">{o.address}</p>}
+                            <p className="text-orange-400/80 text-xs font-medium">{[o.city, o.state, o.pincode].filter(Boolean).join(', ')}</p>
                           </td>
                           <td className="px-4 py-3 text-white font-semibold">Rs.{o.total?.toLocaleString()}</td>
                           <td className="px-4 py-3">
@@ -471,7 +473,7 @@ export default function AdminPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-xs text-zinc-500 bg-zinc-900 border-b border-zinc-800">
-                        {['Order ID','Customer','Items','Amount','Status','Payment','Update Status','Date'].map(h => (
+                        {['Order ID','Customer & Address','Items','Amount','Status','Payment','Update Status','Date'].map(h => (
                           <th key={h} className="px-4 py-3 font-semibold whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
@@ -484,10 +486,15 @@ export default function AdminPage() {
                             <td className="px-4 py-3">
                               <p className="text-orange-400 font-mono text-xs">{o.order_id}</p>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 max-w-[200px]">
                               <p className="text-white font-medium whitespace-nowrap">{o.customer_name}</p>
-                              <p className="text-zinc-500 text-xs">{o.customer_phone}</p>
-                              <p className="text-zinc-600 text-xs">{o.city}</p>
+                              <p className="text-zinc-400 text-xs">{o.customer_phone}</p>
+                              {o.address && (
+                                <p className="text-zinc-400 text-xs mt-1 leading-snug">{o.address}</p>
+                              )}
+                              <p className="text-orange-400/80 text-xs font-medium">
+                                {[o.city, o.state, o.pincode].filter(Boolean).join(', ')}
+                              </p>
                             </td>
                             <td className="px-4 py-3">
                               <div className="max-w-[140px]">
