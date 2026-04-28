@@ -501,8 +501,25 @@ export default function AdminPage() {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     setUpdatingOrder(orderId)
+    const order = orders.find(o => o.order_id === orderId)
     setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: newStatus } : o))
+    if (selectedOrder?.order_id === orderId) setSelectedOrder(prev => ({ ...prev, status: newStatus }))
     try { await supabase.from('orders').update({ status: newStatus }).eq('order_id', orderId) } catch(_){}
+    if (order?.customer_email && order.customer_email !== 'guest@gymsoul.pk') {
+      fetch('/api/notify-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerEmail: order.customer_email,
+          customerName:  order.customer_name || 'Customer',
+          orderId,
+          newStatus,
+          orderTotal:    order.total,
+          city:          order.city,
+          items:         order.items,
+        }),
+      }).catch(() => {})
+    }
     setTimeout(() => setUpdatingOrder(null), 500)
   }
 
