@@ -400,7 +400,7 @@ export default function AdminPage() {
               <div className="card">
                 <div className="flex items-center justify-between p-4 border-b border-zinc-800">
                   <h3 className="text-white font-bold">Recent Orders</h3>
-                  <button onClick={() => setTab('orders')} className="text-orange-400 text-xs hover:text-orange-300 transition-colors">View all ->'</button>
+                  <button onClick={() => setTab('orders')} className="text-orange-400 text-xs hover:text-orange-300 transition-colors flex items-center gap-1">View all <ChevronRight size={12} /></button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
