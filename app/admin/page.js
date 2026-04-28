@@ -1073,6 +1073,7 @@ export default function AdminPage() {
           statusOptions={STATUS_OPTIONS}
           statusColor={STATUS_COLOR}
         />
+      )}
 
       {/* Add User Modal */}
       {showAddUser && (
